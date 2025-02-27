@@ -1,0 +1,2 @@
+<text_response>$TEXT_RESPONSE</text_response>
+<emoji_translation>$EMOJI_TRANSLATION</emoji_translation>
