@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
+  "env": {
+    "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1"
+  },
+  "agent": "swe-backend",
+  "permissions": {
+    "allow": [
+      "Read(**/*.py)",
+      "Read(**/*.toml)",
+      "Read(**/*.md)",
+      "Bash(uv *)",
+      "Bash(python -m pytest)",
+      "Agent(doc-writer)",
+      "Agent(code-reviewer)"
+    ],
+    "deny": [
+      "Bash(rm -rf *)"
+    ]
+  }
+}

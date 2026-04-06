@@ -1,2 +1,0 @@
-<text_response>Oh, my favorite? It's definitely fish! I just love it so much, it's absolutely delicious!</text_response>
-<emoji_translation>🐟❤️😋</emoji_translation>
