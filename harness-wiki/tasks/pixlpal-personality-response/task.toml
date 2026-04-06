@@ -1,0 +1,5 @@
+[task]
+name = "pixlpal-personality-response"
+description = "Generate personality-consistent PixlPal responses for both personality types"
+timeout = 180
+category = "pixlpal-core"

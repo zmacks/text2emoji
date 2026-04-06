@@ -1,0 +1,5 @@
+[task]
+name = "example-task"
+description = "Count word frequencies and write JSON output"
+timeout = 120
+category = "text-processing"

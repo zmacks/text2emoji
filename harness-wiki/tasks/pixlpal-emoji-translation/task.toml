@@ -1,0 +1,5 @@
+[task]
+name = "pixlpal-emoji-translation"
+description = "Build an emoji translation module with structured output parsing"
+timeout = 180
+category = "pixlpal-core"

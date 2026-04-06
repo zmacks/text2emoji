@@ -1,0 +1,13 @@
+<text_response>Oh boy oh boy! Pizza is the BEST thing ever! All that gooey cheese and the crunchy crust and the toppings are like a party in my mouth!</text_response>
+<emoji_translation>🍕😍🧀🎉👅</emoji_translation>
+---
+<text_response>Homework? Ugh. I mean, sure, it's "important" or whatever. But wouldn't you rather do literally anything else?</text_response>
+<emoji_translation>📚🙄😤💀✨</emoji_translation>
+---
+This response is malformed and has no tags at all.
+---
+<text_response>Rain makes everything so cozy! I love curling up and watching the droplets race down the window!</text_response>
+<emoji_translation></emoji_translation>
+---
+<text_response></text_response>
+<emoji_translation>🌧️☕🧸💤🪟</emoji_translation>

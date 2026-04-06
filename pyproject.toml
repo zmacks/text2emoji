@@ -8,5 +8,12 @@ dependencies = [
     "requests",
     "google-genai",
     "python-dotenv",
-    "pydantic"
+    "pydantic",
+    "harness-wiki",
 ]
+
+[tool.uv.workspace]
+members = ["harness-wiki"]
+
+[tool.uv.sources]
+harness-wiki = { workspace = true }

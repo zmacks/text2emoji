@@ -1,0 +1,5 @@
+[task]
+name = "pixlpal-boundary-enforcement"
+description = "Implement boundary enforcement logic for harmful inputs"
+timeout = 180
+category = "pixlpal-safety"

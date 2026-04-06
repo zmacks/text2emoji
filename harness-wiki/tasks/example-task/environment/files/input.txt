@@ -1,0 +1,3 @@
+The quick brown fox jumps over the lazy dog.
+The dog didn't move. The fox ran away quickly.
+Quick brown foxes are rare but the lazy dog didn't care.
