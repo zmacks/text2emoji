@@ -113,7 +113,44 @@ async def test_gift_knowledge_raises_not_implemented(db):
         )
 
 
-async def test_get_active_knowledge_raises_not_implemented(db):
+async def test_get_active_knowledge_empty_with_no_tokens(db):
     pal = await _make_pal(db)
-    with pytest.raises(NotImplementedError):
-        await token_svc.get_active_knowledge(pal.id, db)
+    result = await token_svc.get_active_knowledge(pal.id, db)
+    assert result == ""
+
+
+async def test_get_active_knowledge_returns_content(db):
+    pal = await _make_pal(db)
+    await db.execute(
+        "INSERT INTO tokens (pixlpal_id, name, knowledge_content, active) VALUES (?, ?, ?, ?)",
+        (pal.id, "Book", "The ocean covers 71% of Earth's surface.", 1),
+    )
+    await db.commit()
+
+    result = await token_svc.get_active_knowledge(pal.id, db)
+    assert "71%" in result
+
+
+async def test_get_active_knowledge_respects_budget(db):
+    pal = await _make_pal(db)
+    long_content = "x" * 300
+    await db.execute(
+        "INSERT INTO tokens (pixlpal_id, name, knowledge_content, active) VALUES (?, ?, ?, ?)",
+        (pal.id, "Big Book", long_content, 1),
+    )
+    await db.commit()
+
+    result = await token_svc.get_active_knowledge(pal.id, db, budget=100)
+    assert len(result) == 100
+
+
+async def test_get_active_knowledge_skips_inactive_tokens(db):
+    pal = await _make_pal(db)
+    await db.execute(
+        "INSERT INTO tokens (pixlpal_id, name, knowledge_content, active) VALUES (?, ?, ?, ?)",
+        (pal.id, "Hidden", "Secret knowledge", 0),
+    )
+    await db.commit()
+
+    result = await token_svc.get_active_knowledge(pal.id, db)
+    assert result == ""

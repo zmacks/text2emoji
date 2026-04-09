@@ -28,7 +28,7 @@ router = APIRouter(prefix="/api/pixlpal", tags=["chat"])
 @router.post(
     "/{pixlpal_id}/chat",
     response_model=ChatResponse,
-    summary="Send a message, receive text + emoji response  [Phase 2]",
+    summary="Send a message, receive text + emoji response",
 )
 async def chat(
     pixlpal_id: str,
@@ -44,10 +44,15 @@ async def chat(
                 db=db,
                 gemini=request.app.state.gemini,
             )
+        except LookupError as exc:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=str(exc),
+            )
         except NotImplementedError:
             raise HTTPException(
                 status_code=status.HTTP_501_NOT_IMPLEMENTED,
-                detail="Chat service is not yet implemented (Phase 2).",
+                detail="Chat service is not yet implemented.",
             )
 
 

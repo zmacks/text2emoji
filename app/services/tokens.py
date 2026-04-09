@@ -90,9 +90,33 @@ async def get_active_knowledge(
     db: aiosqlite.Connection,
     budget: int = 2000,
 ) -> str:
-    """Concatenate active token knowledge_content up to `budget` characters.
+    """Concatenate active token knowledge_content up to ``budget`` characters.
 
-    Used by the chat service to inject token knowledge into the system prompt.
-    Implemented in Phase 2 with smart truncation; for now returns empty string.
+    Tokens are returned newest-first so the most recently gifted knowledge is
+    prioritised when the budget is tight.  Returns an empty string when the
+    PixlPal has no active tokens with knowledge content.
     """
-    raise NotImplementedError("get_active_knowledge is not yet implemented (Phase 2).")
+    async with db.execute(
+        """
+        SELECT knowledge_content FROM tokens
+        WHERE pixlpal_id = ? AND active = 1 AND knowledge_content IS NOT NULL
+        ORDER BY acquired_at DESC
+        """,
+        (pixlpal_id,),
+    ) as cursor:
+        rows = await cursor.fetchall()
+
+    parts: list[str] = []
+    remaining = budget
+    for row in rows:
+        content: str = row[0] or ""
+        if not content:
+            continue
+        if len(content) >= remaining:
+            # Take what fits and stop
+            parts.append(content[:remaining])
+            break
+        parts.append(content)
+        remaining -= len(content)
+
+    return "\n\n".join(parts)
