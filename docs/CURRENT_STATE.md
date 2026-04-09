@@ -7,11 +7,13 @@
 
 ## Summary
 
-The project skeleton is complete and all read-paths are functional. The core gameplay loop (chat → teach → gift → discover → customize) is not yet wired end-to-end — every write path and all generation logic is a `NotImplementedError` stub. The test suite (62 tests, all green) and developer tooling (Makefile, dev deps) were added today.
+The project skeleton is complete and the first half of the core gameplay loop is live. `/chat` is fully implemented end-to-end — classification, knowledge injection, Gemini generation, XML parsing, and interaction persistence all wired. `get_active_knowledge` is implemented with a budget-respecting separator-aware join. The remaining loop blockers are `gift_knowledge` (token economy), `update_personality` (customisation), and session-history escalation in the boundary service.
+
+Test suite: **107 tests, all green** (87 unit/integration + 20 property-based). Hypothesis found and fixed a budget-overflow bug in `get_active_knowledge` on first run.
 
 ---
 
-## Phase 1 — API Foundation (~90% done)
+## Phase 1 — API Foundation ✅ complete
 
 ### 1.1 Project restructure — complete
 
@@ -31,7 +33,7 @@ The project skeleton is complete and all read-paths are functional. The core gam
 
 All 4 tables (`pixlpals`, `tokens`, `interactions`, `token_thresholds`) with indexes and seeded threshold data. WAL mode + FK enforcement enabled at startup.
 
-### 1.3 API endpoints — 5 of 9 implemented, 4 stubs
+### 1.3 API endpoints — 6 of 9 implemented, 3 stubs
 
 | Endpoint | Status |
 |---|---|
@@ -40,26 +42,28 @@ All 4 tables (`pixlpals`, `tokens`, `interactions`, `token_thresholds`) with ind
 | `GET /api/pixlpal/{id}` | ✅ |
 | `GET /api/pixlpal/{id}/tokens` | ✅ |
 | `GET /api/pixlpal/{id}/tokens/count` | ✅ with threshold lookup |
+| `POST /api/pixlpal/{id}/chat` | ✅ full pipeline |
 | `PATCH /api/pixlpal/{id}/personality` | ⚠️ 501 stub |
-| `POST /api/pixlpal/{id}/chat` | ⚠️ 501 stub |
 | `POST /api/pixlpal/{id}/teach` | ⚠️ 501 stub |
 | `POST /api/pixlpal/{id}/gift` | ⚠️ 501 stub |
 | `GET /api/pixlpal/{id}/history` | ⚠️ 501 stub |
 
 ---
 
-## Phase 2 — Core Loop (~25% done)
+## Phase 2 — Core Loop (~50% done)
 
-All four service files exist and are scaffolded. Read paths are solid; every write path and all generation logic is a `NotImplementedError`.
-
-### 2.1 Chat service (`app/services/chat.py`)
+### 2.1 Chat service (`app/services/chat.py`) — complete
 
 | Item | Status |
 |---|---|
-| `parse_response(raw)` — XML tag extractor | ✅ implemented + 8 tests |
-| `handle_chat(...)` — full pipeline | ❌ `NotImplementedError` |
+| `parse_response(raw)` — XML tag extractor | ✅ |
+| `handle_chat(...)` — full pipeline | ✅ |
+| `_max_tokens_for_count` — scales 500/1000/2000 with token count | ✅ |
+| `_save_interaction` — persists to `interactions` table | ✅ |
 
-The pipeline steps described in the plan (`boundary → get_active_knowledge → compose_prompt → gemini.generate → parse → interactions.save`) are all individually defined but none are wired together yet.
+Pipeline: `check_input → get_response_mode → get_pixlpal → get_active_knowledge → compose_system_prompt → gemini.generate → parse_response → _save_interaction`
+
+Generation parameters scale with state: `max_output_tokens` grows with token count (500 → 1000 → 2000 at thresholds 1 and 5); temperature is 0.8 for playful mode, 1.0 for witty. Boundary enforcement prepends `BREAK_CHARACTER_PREFIX` for `break_character` mode and appends `BLAND_SYSTEM_SUFFIX` to the system prompt for both flagged modes.
 
 ### 2.2 Personality service (`app/services/personality.py`)
 
@@ -76,17 +80,17 @@ The pipeline steps described in the plan (`boundary → get_active_knowledge →
 |---|---|
 | `list_tokens` | ✅ |
 | `get_token_count` + threshold lookup | ✅ |
+| `get_active_knowledge` — budget-limited context injection | ✅ fixed separator-budget bug |
 | `gift_knowledge` (Gemini summary → token → threshold check) | ❌ `NotImplementedError` |
-| `get_active_knowledge` (budget-limited context injection) | ❌ `NotImplementedError` |
 
 ### 2.4 Boundary service (`app/services/boundary.py`)
 
 | Item | Status |
 |---|---|
 | `check_input(text)` — keyword classifier | ✅ |
-| `BREAK_CHARACTER_PREFIX` and `BLAND_SYSTEM_SUFFIX` constants | ✅ defined |
-| `get_response_mode` — session history escalation | ⚠️ partial — classifies current input only, does not yet count prior violations from the `interactions` table |
-| Wired into `handle_chat` | ❌ (chat not implemented) |
+| `BREAK_CHARACTER_PREFIX` and `BLAND_SYSTEM_SUFFIX` constants | ✅ |
+| Wired into `handle_chat` | ✅ |
+| `get_response_mode` — session history escalation | ⚠️ partial — classifies current input only; does not yet query the `interactions` table to count prior session violations |
 
 ---
 
@@ -97,8 +101,8 @@ The pipeline steps described in the plan (`boundary → get_active_knowledge →
 | `harness-wiki` package (runner, wiki, CLI, meta) | ✅ exists as workspace member |
 | `harness-wiki/agent.py` | ✅ exists |
 | 3 pixlpal benchmark tasks | ✅ `pixlpal-personality-response`, `pixlpal-boundary-enforcement`, `pixlpal-emoji-translation` |
-| Wiki pages (`harness-wiki/wiki/`) | ❌ directory is empty — 6 seed pages from plan are not written |
-| Tasks runnable end-to-end against a live server | ❌ chat/gift/teach endpoints are all stubs |
+| Tasks runnable end-to-end against a live server | ⚠️ `/chat` is live; `/gift` and `/teach` are still stubs |
+| Wiki pages (`harness-wiki/wiki/`) | ❌ directory is empty |
 | Phase 3 task list (6 tasks) | ⚠️ 3 of 6 created; missing: `pixlpal-chat-api`, `pixlpal-token-acquisition`, `pixlpal-token-progression` |
 
 ---
@@ -107,18 +111,17 @@ The pipeline steps described in the plan (`boundary → get_active_knowledge →
 
 | Item | Status |
 |---|---|
-| `Makefile` (dev/run/test/clean targets) | ✅ added 2026-04-08 |
-| Test suite — 62 tests, all green | ✅ added 2026-04-08 |
-| `pytest` + `pytest-asyncio` + `httpx` dev group | ✅ added 2026-04-08 |
+| `Makefile` (dev/run/test/clean targets) | ✅ |
+| Test suite — 107 tests, all green | ✅ |
+| `pytest` + `pytest-asyncio` + `httpx` + `hypothesis` dev group | ✅ |
+| Property-based tests (`tests/test_property.py`, 20 tests) | ✅ |
+| Hypothesis found + fixed budget-overflow bug in `get_active_knowledge` | ✅ |
 
 ---
 
 ## Critical path to working core loop
 
-In plan order:
-
-1. **`handle_chat`** — unblocks `/chat`, which unblocks harness tasks and makes the gameplay loop feel real
-2. **`gift_knowledge` + `get_active_knowledge`** — completes the token economy (knowledge injection into chat)
-3. **`update_personality`** — completes `PATCH /personality` and enables the witty mode unlock
-4. **`get_response_mode` session history** — upgrade boundary service from stateless to session-aware
-5. **Wiki seed pages** — needed before `harness improve` is useful
+1. **`gift_knowledge`** — completes the token economy; players can gift content, earn tokens, trigger threshold unlocks
+2. **`update_personality`** — completes `PATCH /personality` and enables the witty mode unlock
+3. **`get_response_mode` session history** — upgrade boundary service from stateless to session-aware escalation (1-2 violations → bland, 3+ → break_character)
+4. **Wiki seed pages** — needed before `harness improve` is useful; `pixlpal-chat-api` harness task is now unblocked
