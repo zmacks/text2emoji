@@ -107,16 +107,25 @@ async def get_active_knowledge(
         rows = await cursor.fetchall()
 
     parts: list[str] = []
-    remaining = budget
+    used = 0  # tracks len("\n\n".join(parts)) exactly
+
     for row in rows:
         content: str = row[0] or ""
         if not content:
             continue
-        if len(content) >= remaining:
-            # Take what fits and stop
-            parts.append(content[:remaining])
+
+        # Cost of adding this piece, including the "\n\n" separator if needed
+        separator_cost = 2 if parts else 0
+        piece_cost = separator_cost + len(content)
+
+        if used + piece_cost > budget:
+            # Fit as many characters of this piece as the budget allows
+            available = budget - used - separator_cost
+            if available > 0:
+                parts.append(content[:available])
             break
+
         parts.append(content)
-        remaining -= len(content)
+        used += piece_cost
 
     return "\n\n".join(parts)
